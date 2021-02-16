@@ -1,0 +1,23 @@
+{
+  "quorum": 2,
+  "trustees": [
+    {
+      "id": "alice",
+      "sequence_number": 0,
+      "address": "http://localhost:9000",
+      "public_key": "H8CA6aMWgwNS74mGiAUOPdydHUdcPnmNa+1RToXHAt8="
+    },
+    {
+      "id": "bob",
+      "sequence_number": 1,
+      "address": "http://localhost:9001",
+      "public_key": "c+gAopXNGTZqJuCZAtnWuBdJ5ErKKhFp0Q8LdkJLLa0="
+    },
+    {
+      "id": "charlie",
+      "sequence_number": 2,
+      "address": "http://localhost:9002",
+      "public_key": "kTdCnHnIr4VfyrYfqOpQytA5pxd4ySW4PNum/bftNqg="
+    }
+  ]
+}
