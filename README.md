@@ -48,10 +48,17 @@ Here `"ciphertext-ballot"` should be replaced with a stringified version of an [
 Run joint tallying and decryption, using the trustees. See [this repository](https://github.com/RightToAskOrg/righttoask-trustee) for more details.
 
 **Returns:**
+On success:
 ```json
 {
-  "success": true/false,
+  "success": true,
   "outcome": PlaintextTallyObject
 }
 ```
 where `PlaintextTallyObject` is an [ElectionGuard PlaintextTally](https://github.com/microsoft/electionguard-python/blob/main/src/electionguard/tally.py#L168).
+On failure:
+```josn
+{
+  "success": false
+}
+```
