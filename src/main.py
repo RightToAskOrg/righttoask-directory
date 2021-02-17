@@ -23,7 +23,7 @@ from pydantic import BaseModel
 
 
 def load_trustee_manifest():
-    with open("data/trustee-manifest.json", "r") as file:
+    with open("data/directory-manifest.json", "r") as file:
         return json.load(file)
 
 
