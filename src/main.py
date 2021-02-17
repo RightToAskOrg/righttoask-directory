@@ -1,5 +1,6 @@
 import base64
 import json
+from typing import Tuple
 
 import requests
 import uvicorn
@@ -8,7 +9,7 @@ from electionguard.ballot import CiphertextBallot, BallotBoxState, from_cipherte
 from electionguard.decrypt_with_shares import decrypt_tally
 from electionguard.decryption_share import TallyDecryptionShare
 from electionguard.dlog import discrete_log
-from electionguard.election import ElectionDescription
+from electionguard.election import ElectionDescription, InternalElectionDescription, CiphertextElectionContext
 from electionguard.election_builder import ElectionBuilder
 from electionguard.group import g_pow_p, int_to_q
 from electionguard.key_ceremony import ElectionJointKey
@@ -26,13 +27,14 @@ def load_trustee_manifest():
         return json.load(file)
 
 
-def load_trustee_keys(trustee_data):
+def load_trustee_keys(data):
     result = dict()
-    for trustee in trustee_data["trustees"]:
+    for trustee in data["trustees"]:
         object_id = trustee["id"]
         verify_key = VerifyKey(trustee["public_key"], encoder=encoding.Base64Encoder)
         result[object_id] = verify_key
     return result
+
 
 def load_election_manifest():
     return ElectionDescription.from_json_file("data/election-manifest")
@@ -51,7 +53,7 @@ _pubkey = None
 _pubkey_sigs = dict()
 
 
-def lazy_get_election():
+def lazy_get_election() -> Tuple[InternalElectionDescription, CiphertextElectionContext]:
     """
     Lazily downloads the election public key from the trustees, and creates the appropriate election context.
     Caches once successful.
@@ -113,6 +115,14 @@ async def get_trustees():
 @app.get("/election")
 async def get_election():
     return write_json(election_desc)
+
+@app.get("/pubkey")
+async def get_pubkey():
+    _, context = lazy_get_election()
+    # ElectionGuard doesn't have a better encoding unfortunately
+    return json.dumps({
+        "pubkey": context.elgamal_public_key.to_hex()
+    })
 
 
 class Vote(BaseModel):

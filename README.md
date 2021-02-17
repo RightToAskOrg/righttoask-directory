@@ -44,6 +44,13 @@ poetry install
 Here `"ciphertext-ballot"` should be replaced with a stringified version of an [ElectionGuard CiphertextBallot](https://github.com/microsoft/electionguard-python/blob/main/src/electionguard/ballot.py#L638).
 (TODO: this should be turned into a pydantic model eventually.)
 
+For testing purposes, a lightweight client to submit votes is available at `test/test-client.py`. To use the test
+client, run
+```shell
+python test/test-client.py <vote>
+```
+where `<vote>` is `1` for an upvote or `-1` for a downvote.
+
 ### `/tally`:
 Run joint tallying and decryption, using the trustees. See [this repository](https://github.com/RightToAskOrg/righttoask-trustee) for more details.
 
@@ -62,3 +69,13 @@ On failure:
   "success": false
 }
 ```
+
+To test this endpoint, use:
+```shell
+curl localhost:8000/tally
+```
+
+## Todo
+* Documentation for directory and test client
+* Documentation for manifest formats
+* pydantic types for ElectionGuard
