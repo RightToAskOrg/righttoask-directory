@@ -1,9 +1,11 @@
 import base64
 import json
+import math
 from typing import Tuple
 
 import requests
 import uvicorn
+from electionguard import group
 
 from electionguard.ballot import CiphertextBallot, BallotBoxState, from_ciphertext_ballot
 from electionguard.decrypt_with_shares import decrypt_tally
@@ -15,6 +17,7 @@ from electionguard.group import g_pow_p, int_to_q
 from electionguard.key_ceremony import ElectionJointKey
 from electionguard.serializable import read_json, write_json
 from electionguard.tally import CiphertextTally
+from electionguard.utils import get_optional
 from fastapi import FastAPI
 from nacl import encoding
 from nacl.exceptions import BadSignatureError
@@ -46,7 +49,7 @@ trustee_keys = load_trustee_keys(trustee_data)
 election_desc = load_election_manifest()
 ciphertexts = []
 
-# For caching
+# Cache the election metadata and context as globals
 _metadata = None
 _context = None
 _pubkey = None
@@ -69,7 +72,7 @@ def lazy_get_election() -> Tuple[InternalElectionDescription, CiphertextElection
         for trustee in trustee_data["trustees"]:
             verify_key = trustee_keys[trustee["id"]]
             try:
-                response = json.loads(requests.get(f"{trustee['address']}/pubkey").json())
+                response = requests.get(f"{trustee['address']}/pubkey").json()
             except requests.exceptions.ConnectionError:
                 print(f"failed to connect to {trustee['id']}")
                 continue
@@ -78,7 +81,7 @@ def lazy_get_election() -> Tuple[InternalElectionDescription, CiphertextElection
             sig = response["signature"]
 
             try:
-                verify_key.verify(base64.b64decode(sig) + write_json(pubkey).encode("utf-8"))
+                verify_key.verify(base64.b64decode(sig) + base64.b64decode(pubkey))
             except BadSignatureError:
                 print(f"failed to verify signature for: {trustee['id']}")
                 continue
@@ -92,7 +95,8 @@ def lazy_get_election() -> Tuple[InternalElectionDescription, CiphertextElection
         if len(set(pubkeys)) > 1:
             raise Exception("disagreement on the public key")
 
-        _pubkey = read_json(pubkeys[0], ElectionJointKey)
+        pubkey_b64 = int.from_bytes(base64.b64decode(pubkeys[0]), "big")
+        _pubkey = get_optional(group.int_to_p(pubkey_b64))
         builder = ElectionBuilder(
             number_of_guardians=len(trustee_keys),
             quorum=trustee_data["quorum"],
@@ -109,7 +113,7 @@ app = FastAPI()
 
 @app.get("/trustees")
 async def get_trustees():
-    return trustee_data
+    return trustee_data["trustees"]
 
 
 @app.get("/election")
@@ -120,11 +124,12 @@ async def get_election():
 async def get_pubkey():
     _, context = lazy_get_election()
     # ElectionGuard doesn't have a better encoding unfortunately
-    return json.dumps({
-        "pubkey": context.elgamal_public_key.to_hex()
-    })
+    pubkey = int(context.elgamal_public_key.to_int())
+    pubkey = base64.b64encode(pubkey.to_bytes(math.ceil(pubkey.bit_length() / 8), 'big'))
+    return {"pubkey": pubkey}
 
 
+# FastAPI model declarations; below should be fleshed out with the true structure
 class Vote(BaseModel):
     body: str
 
@@ -140,25 +145,33 @@ async def post_vote(vote: Vote):
 
 @app.get("/tally")
 async def run_tally():
-    # TODO: cache this result?
+    """
+    Run the tally procedure by requesting a decryption share from each trustee and combining them into a decrypted
+    tally.
+
+    Returns the decrypted tally if successful.
+    """
     data = json.dumps({"body": write_json(ciphertexts)})
     metadata, context = lazy_get_election()
 
-    # Get shares
+    # Get shares from each trustee
     shares = dict()
+
     for trustee in trustee_data["trustees"]:
+        # Attempt to download the share
         try:
             response = json.loads(requests.get(f"{trustee['address']}/share", data=data).json())
         except requests.exceptions.ConnectionError:
             print(f"failed to connect to {trustee['id']}")
             continue
 
+        # Check the share was for the trustee we expected
         share = read_json(json.dumps(response["share"]), TallyDecryptionShare)
         if share.guardian_id != trustee["id"]:
             print(f"share received from {trustee['id']} was for incorrect trustee {share.guardian_id}")
             continue
 
-        # Check the signature
+        # Check the signature for the received share
         sig = response["signature"]
         verify_key = trustee_keys[share.guardian_id]
         try:
@@ -186,7 +199,10 @@ async def run_tally():
 
 
 if __name__ == "__main__":
-    # Cannot run asyncio task while FastAPI is running, so pre-load it
+    # Cannot run asyncio tasks while FastAPI is running, so pre-load it
     print("pre-loading discrete logarithm...")
     discrete_log(g_pow_p(int_to_q(1000000)))
-    uvicorn.run("main:app", host="localhost", port=8000, loop="asyncio")
+
+    # For some reason, setting `debug=False` here causes the server to randomly terminate after responding to share
+    # requests.
+    uvicorn.run("main:app", host="localhost", port=8000, loop="uvloop", debug=True)

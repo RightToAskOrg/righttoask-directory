@@ -2,7 +2,7 @@
   "directory": "http://localhost:8000",
   "device": "test-device",
   "quorum": 2,
-  "guardians": [
+  "trustees": [
     {
       "id": "alice",
       "sequence_number": 0,

@@ -4,29 +4,32 @@ client votes, and orchestrates distributed decryption with the trustees. It take
 REST API. 
 
 ## Getting started
-1. Create and activate a Python virtual environment. (**Note:** make sure you are using Python 3.8.x.)
+1. Create and activate a Python virtual environment.
 ```
- $ python3 --version
-Python 3.8.2
  $ python3 -m venv venv      
  $ source venv/bin/activate
 ```
 2. Install `poetry` (skip this step if you already have Poetry).
 ```
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+$ curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
 ```
-3. Install the required Python packages. (May take a little while.)
+3. Ensure the required libraries are installed and available on your system:
+   - `libssl-dev`
+   - `libgmp-dev`
+   - `libmpfr-dev`
+4. Install the required Python packages. (May take a little while.)
 ```
-poetry install
+$ poetry install
 ```
-
-### Troubleshooting
-* **Step 3:** `ERROR: Failed building wheel for cryptography`:
-    * This is typically caused by libraries failing to link. Check that the following packages (or equivalent) are installed
-      and available on your `PATH`:
-        - `libssl-dev`
-        - `libgmp-dev`
-    
+5. To run the directory, ensure you're in the virtual environment:
+```bash
+$ source venv/bin/activate
+```
+and run the server script:
+```bash
+$ python src/main.py
+```
+ 
 ## API endpoints
 ### `/trustees`:
 **Returns:** the trustee manifest, containing details about each trustee's name, address, sequence number, and public key.
@@ -45,7 +48,7 @@ Here `"ciphertext-ballot"` should be replaced with a stringified version of an [
 (TODO: this should be turned into a pydantic model eventually.)
 
 For testing purposes, a lightweight client to submit votes is available at `test/test-client.py`. To use the test
-client, run
+client, ensure you're in the virtual environment and run
 ```shell
 python test/test-client.py <vote>
 ```
