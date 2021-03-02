@@ -9,4 +9,6 @@ The client manifest structure is as follows:
     * `id`: string representing the trustee's label
     * `sequence_number`: integer representing the order this trustee acts in during tallying
     * `address`: string representing the web address of this trustee
-    * `public_key`: a representing the ECDSA verifying key for this trustee, in base 64. 
+    * `public_key`: a representing the ECDSA verifying key for this trustee, in base 64.
+  
+An example file can be found at `test/data/client-manifest.json`.
