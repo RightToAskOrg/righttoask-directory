@@ -78,6 +78,10 @@ To test this endpoint, use:
 curl localhost:8000/tally
 ```
 
+## File formats
+Descriptions of the manifest formats used in this project are available in `docs/`. `election-manifest.json` is an
+ElectionGuard format; more information [can be found here](https://microsoft.github.io/electionguard-python/0_Configure_Election/).
+
 ## Known issues
 * In some settings (reproduced on Manjaro Linux, kernel 5.10.15) running Uvicorn with `debug=False` causes the server to
   suddenly shut down after responding to requests.
