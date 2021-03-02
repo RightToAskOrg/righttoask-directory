@@ -87,5 +87,5 @@ ElectionGuard format; more information [can be found here](https://microsoft.git
   suddenly shut down after responding to requests.
 
 ## Todo
-* Documentation for directory server and test client
+* Documentation for directory server and test client code
 * pydantic types for ElectionGuard
