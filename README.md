@@ -78,7 +78,10 @@ To test this endpoint, use:
 curl localhost:8000/tally
 ```
 
+## Known issues
+* In some settings (reproduced on Manjaro Linux, kernel 5.10.15) running Uvicorn with `debug=False` causes the server to
+  suddenly shut down after responding to requests.
+
 ## Todo
-* Documentation for directory and test client
-* Documentation for manifest formats
+* Documentation for directory server and test client
 * pydantic types for ElectionGuard
