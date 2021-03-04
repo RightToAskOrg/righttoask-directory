@@ -23,6 +23,15 @@ from nacl import encoding
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 from pydantic import BaseModel
+from functools import lru_cache
+from electionguard.scheduler import Scheduler
+
+__all__ = ["get_scheduler"]
+
+
+@lru_cache
+def get_scheduler() -> Scheduler:
+    return Scheduler()
 
 
 def load_trustee_manifest():
@@ -111,6 +120,14 @@ def lazy_get_election() -> Tuple[InternalElectionDescription, CiphertextElection
 app = FastAPI()
 
 
+# Necessary to prevent the server hanging after SIGINT
+@app.on_event("shutdown")
+def on_shutdown() -> None:
+    # Ensure a clean shutdown of the singleton Scheduler
+    scheduler = get_scheduler()
+    scheduler.close()
+
+
 @app.get("/trustees")
 async def get_trustees():
     return trustee_data["trustees"]
@@ -119,6 +136,7 @@ async def get_trustees():
 @app.get("/election")
 async def get_election():
     return write_json(election_desc)
+
 
 @app.get("/pubkey")
 async def get_pubkey():
@@ -186,7 +204,7 @@ async def run_tally():
     # TODO: compensate for missing shares
 
     tally = CiphertextTally("my-tally", metadata, context)
-    tally.batch_append(ciphertexts)
+    tally.batch_append(ciphertexts, scheduler=get_scheduler())
 
     outcome = None
     if len(shares) == len(trustee_keys):
@@ -203,6 +221,4 @@ if __name__ == "__main__":
     print("pre-loading discrete logarithm...")
     discrete_log(g_pow_p(int_to_q(1000000)))
 
-    # For some reason, setting `debug=False` here causes the server to randomly terminate after responding to share
-    # requests.
-    uvicorn.run("main:app", host="localhost", port=8000, loop="uvloop", debug=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, loop="uvloop")
