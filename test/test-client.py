@@ -123,8 +123,7 @@ def main(vote: int):
     metadata, context, device, directory = parse_data()
     encrypter = EncryptionMediator(metadata, context, device)
     ballot = encrypter.encrypt(generate_ballot(vote))
-    data = write_json(ballot)
-    print(data)
+    data = json.dumps({"body": write_json(ballot)})
     requests.post(f"{directory}/vote", data=data)
 
 if __name__ == "__main__":
