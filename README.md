@@ -65,9 +65,9 @@ On success:
   "outcome": PlaintextTallyObject
 }
 ```
-where `PlaintextTallyObject` is an [ElectionGuard PlaintextTally](https://github.com/microsoft/electionguard-python/blob/main/src/electionguard/tally.py#L168).
+where `PlaintextTallyObject` is an [ElectionGuard PlaintextTally](https://github.com/microsoft/electionguard-python/blob/main/src/electionguard/tally.py#L168). The object contains both an upvote tally and a downvote tally.
 On failure:
-```josn
+```json
 {
   "success": false
 }
@@ -82,10 +82,20 @@ curl localhost:8000/tally
 Descriptions of the manifest formats used in this project are available in `docs/`. `election-manifest.json` is an
 ElectionGuard format; more information [can be found here](https://microsoft.github.io/electionguard-python/0_Configure_Election/).
 
-## Known issues
-* In some settings (reproduced on Manjaro Linux, kernel 5.10.15) running Uvicorn with `debug=False` causes the server to
-  suddenly shut down after responding to requests.
-
 ## Todo
 * Documentation for directory server and test client code
-* pydantic types for ElectionGuard
+* pydantic types for ElectionGuard.  Possible EG will do this.
+
+### Important differences from final intended design
+
+* There needs to be some care over how a decryption is initiated.  Clearly a plain API callable from anywhere is not the long term solution.  We need to avoid allowing the trustees to be usable as a decyrption oracle, and need to enforce rules about decryption occuring only on large sets of votes. 
+* The recieved votes need to be in persistent storage rather than RAM.  A standard database (e.g. PostgeSQL) should be fine.
+* Needs to be producing a "BB object", consisting of a verifiable proof a transcript, combined with inclusion proofs for individual data items; history proofs for prior checkpoints, etc.
+* The directory probably needs to sign its responses.
+* It also probably needs to sign its decryption requests to the trustees.
+* Probably also needs to verify sigs from voters.  This is actually primarily for privacy, to deter stuffing with invalid votes and thus evading grouping for decryption.
+
+### Troubleshooting and other details
+When switching between talliers and directory, remember to deactivate one virtual environment ('deactivate' at command line) and then (re) activate the other.
+
+422 Unprocessable entity: this error was encountered because of a mismatch between the expected and received types.  (one level of abstraction.)
